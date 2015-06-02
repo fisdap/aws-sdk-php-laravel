@@ -1,6 +1,6 @@
 <?php namespace Aws\Laravel;
 
-use Aws\Common\Aws;
+use Aws\Sdk;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -26,7 +26,9 @@ class AwsServiceProvider extends ServiceProvider {
 
         $this->mergeConfigFrom($config, 'aws');
 
-        $this->publishes([$config => config_path('aws.php')], 'config');
+        $this->publishes([
+            $config => $this->app->make('path.config') . DIRECTORY_SEPARATOR . 'aws.php'
+        ], 'config');
     }
 
     /**
@@ -37,16 +39,10 @@ class AwsServiceProvider extends ServiceProvider {
     public function register()
     {
         $this->app->singleton('aws', function ($app) {
-            // Retrieve config.
-            $config = $app['config']->get('aws');
-            if (isset($config['config_file'])) {
-                $config = $config['config_file'];
-            }
-
-            return Aws::factory($config);
+            return new Sdk($app['config']->get('aws'));
         });
 
-        $this->app->alias('aws', 'Aws\Common\Aws');
+        $this->app->alias('aws', 'Aws\Sdk');
     }
 
     /**

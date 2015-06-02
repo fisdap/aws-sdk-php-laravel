@@ -16,28 +16,8 @@ class AwsServiceProviderTest extends \PHPUnit_Framework_TestCase {
         AWS::setFacadeApplication($app);
 
         // Get an instance of a client (S3) via its facade
-        $s3 = AWS::get('s3');
+        $s3 = AWS::createClient('S3');
         $this->assertInstanceOf('Aws\S3\S3Client', $s3);
-    }
-
-    public function testRegisterAwsServiceProviderWithConfigFile()
-    {
-        $app = $this->setupApplication();
-        $this->setupServiceProvider($app);
-
-        // Simulate global config; specify config file
-        $app['config']->set('aws', [
-            'config_file' => __DIR__ . '/test_services.json'
-        ]);
-
-        // Get an instance of a client (S3)
-        /** @var $s3 \Aws\S3\S3Client */
-        $s3 = $app['aws']->get('s3');
-        $this->assertInstanceOf('Aws\S3\S3Client', $s3);
-
-        // Verify that the client received the credentials from the global config
-        $this->assertEquals('change_me', $s3->getCredentials()->getAccessKeyId());
-        $this->assertEquals('change_me', $s3->getCredentials()->getSecretKey());
     }
 
     public function testRegisterAwsServiceProviderWithPackageConfigAndEnv()
@@ -47,12 +27,14 @@ class AwsServiceProviderTest extends \PHPUnit_Framework_TestCase {
 
         // Get an instance of a client (S3)
         /** @var $s3 \Aws\S3\S3Client */
-        $s3 = $app['aws']->get('s3');
+        $s3 = $app['aws']->createClient('S3');
         $this->assertInstanceOf('Aws\S3\S3Client', $s3);
 
         // Verify that the client received the credentials from the package config
-        $this->assertEquals('foo', $s3->getCredentials()->getAccessKeyId());
-        $this->assertEquals('bar', $s3->getCredentials()->getSecretKey());
+        /** @var \Aws\Credentials\CredentialsInterface $credentials */
+        $credentials = $s3->getCredentials()->wait();
+        $this->assertEquals('foo', $credentials->getAccessKeyId());
+        $this->assertEquals('bar', $credentials->getSecretKey());
         $this->assertEquals('baz', $s3->getRegion());
     }
 
